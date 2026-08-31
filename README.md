@@ -59,9 +59,17 @@ The provider catalog, Authentication, and each signed-in user's favorites/vehicl
 
 - **Firestore** — `providers` (public catalog, seeded once via `seed.html`) and `users/{uid}` (favorites field, plus `vehicles`/`bookings` subcollections, created automatically on first sign-in)
 - **Authentication** — Google + email/password, real sign-up/sign-in/sign-out/password-reset (see `js/app.js`'s `signInWithGoogle`/`emailSignIn`/`emailSignUp`/`logout`/`sendResetEmail`)
-- **Security rules** — `firestore.rules` in this repo (copy it into the Firebase Console's Rules tab): public read on `providers`, no client writes; `users/{uid}` and its subcollections readable/writable only by that user; everything else denied by default
+- **Security rules** — `firestore.rules` in this repo (copy it into the Firebase Console's Rules tab): public read on `providers`, admin-only writes; `users/{uid}` and its subcollections readable/writable only by that user (plus admin read); everything else denied by default
 
 To point this at your own Firebase project: create one at [console.firebase.google.com](https://console.firebase.google.com), enable Firestore + Authentication (Email/Password + Google providers), paste your web app's config into `js/firebase-config.js`, then open `seed.html` once to load the provider catalog.
+
+### Admin Panel
+
+`admin.html` is a standalone dashboard (sign in with any AutoHub account) for managing the provider catalog and viewing every user's bookings. It's gated by a Firestore allowlist rather than Cloud Functions, so it works on the free Spark plan:
+
+1. Sign in once via `admin.html` (or the main app) with the account you want as admin, and note its UID (shown on the "Access Denied" screen if it's not an admin yet).
+2. In the Firebase Console → Firestore Database → Data, create a collection named `admins` with a document whose ID is that UID (any field/value works, e.g. `role: "admin"`).
+3. Reload `admin.html` and sign in again — you'll see the Providers and Bookings tabs.
 
 ## Live map (optional)
 

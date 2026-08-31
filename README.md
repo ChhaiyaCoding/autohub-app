@@ -49,8 +49,19 @@ js/app.js             App controller — hash-less router, state, all screen ren
 
 - **Call** opens `tel:` · **Navigate** opens Google Maps with the address
 - **Request Service**, search, share, booking, promotions → toast "Coming Soon"
-- Favorites, vehicles, bookings, notifications, and saved locations persist to `localStorage`; everything else is in-memory mock data
+- Provider catalog, Authentication, and each signed-in user's favorites/vehicles/bookings run on real Firebase (Firestore + Auth) — see **Backend** below
+- Notifications and saved locations persist to `localStorage`; everything else is in-memory mock data
 - Map is a stylised placeholder with tappable pins by default — see **Live map** below to switch on a real Google Map
+
+## Backend (Firebase)
+
+The provider catalog, Authentication, and each signed-in user's favorites/vehicles/bookings run on Firebase:
+
+- **Firestore** — `providers` (public catalog, seeded once via `seed.html`) and `users/{uid}` (favorites field, plus `vehicles`/`bookings` subcollections, created automatically on first sign-in)
+- **Authentication** — Google + email/password, real sign-up/sign-in/sign-out/password-reset (see `js/app.js`'s `signInWithGoogle`/`emailSignIn`/`emailSignUp`/`logout`/`sendResetEmail`)
+- **Security rules** — `firestore.rules` in this repo (copy it into the Firebase Console's Rules tab): public read on `providers`, no client writes; `users/{uid}` and its subcollections readable/writable only by that user; everything else denied by default
+
+To point this at your own Firebase project: create one at [console.firebase.google.com](https://console.firebase.google.com), enable Firestore + Authentication (Email/Password + Google providers), paste your web app's config into `js/firebase-config.js`, then open `seed.html` once to load the provider catalog.
 
 ## Live map (optional)
 

@@ -13,7 +13,7 @@
    Security Rules (set those before going to production).
    ========================================================= */
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-import { getFirestore, collection, getDocs, doc, setDoc, addDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+import { getFirestore, collection, getDocs, getDoc, doc, setDoc, addDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 import {
   getAuth, onAuthStateChanged, signInWithPopup, GoogleAuthProvider,
   createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut,
@@ -39,7 +39,7 @@ window.firebaseApp = firebaseApp;
 window.db = getFirestore(firebaseApp);
 window.auth = getAuth(firebaseApp);
 // Firestore function helpers, exposed for classic (non-module) scripts to call directly.
-window.fs = { collection, getDocs, doc, setDoc, addDoc };
+window.fs = { collection, getDocs, getDoc, doc, setDoc, addDoc };
 // Auth function helpers, same reason.
 window.authFns = {
   onAuthStateChanged, signInWithPopup, GoogleAuthProvider,

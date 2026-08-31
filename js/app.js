@@ -84,6 +84,7 @@ const App = {
           name, email: user.email || '',
           initials: name.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase(),
         };
+        this._loadUserData(user.uid);
         if (this.AUTH_SCREENS.includes(this.state.route)) this.go('home');
         else this.render();
       } else {
@@ -172,8 +173,80 @@ const App = {
       .catch((e) => console.warn('Firestore providers fetch failed, using local mock data', e));
   },
 
-  _saveVehicles() { localStorage.setItem('autohub_vehicles', JSON.stringify(this.state.vehicles)); },
-  _saveBookings() { localStorage.setItem('autohub_bookings', JSON.stringify(this.state.bookings)); },
+  // ---- Per-user data (Firestore, scoped to users/{uid}) ----
+  // Falls back to localStorage only if signed out (shouldn't normally happen —
+  // Home/Profile are only reachable once authenticated) so nothing crashes.
+  _currentUid() { return window.auth && window.auth.currentUser && window.auth.currentUser.uid; },
+  async _loadUserData(uid) {
+    if (!window.db || !window.fs) return;
+    try {
+      const userRef = window.fs.doc(window.db, 'users', uid);
+      const userSnap = await window.fs.getDoc(userRef);
+      if (!userSnap.exists()) {
+        // brand-new account — seed Firestore with the starting demo data.
+        // Uses the DEFAULT_* constants (not this.state), since local state
+        // may hold stale localStorage leftovers from before sign-in.
+        this.state.favorites = [...DEFAULT_FAVORITES];
+        this.state.vehicles = [...DEFAULT_VEHICLES];
+        this.state.bookings = [...DEFAULT_BOOKINGS];
+        await window.fs.setDoc(userRef, { favorites: this.state.favorites });
+        for (const v of this.state.vehicles) {
+          await window.fs.setDoc(window.fs.doc(window.db, 'users', uid, 'vehicles', v.id), v);
+        }
+        for (const b of this.state.bookings) {
+          await window.fs.setDoc(window.fs.doc(window.db, 'users', uid, 'bookings', b.id), b);
+        }
+      } else {
+        this.state.favorites = userSnap.data().favorites || [];
+        const [vSnap, bSnap] = await Promise.all([
+          window.fs.getDocs(window.fs.collection(window.db, 'users', uid, 'vehicles')),
+          window.fs.getDocs(window.fs.collection(window.db, 'users', uid, 'bookings')),
+        ]);
+        this.state.vehicles = vSnap.docs.map((d) => ({ id: d.id, ...d.data() }));
+        this.state.bookings = bSnap.docs.map((d) => ({ id: d.id, ...d.data() }))
+          .sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+      }
+      this.render();
+    } catch (e) {
+      console.warn('Firestore user-data load failed, using local data', e);
+    }
+  },
+  _saveFavorites() {
+    const uid = this._currentUid();
+    if (uid && window.db && window.fs) {
+      window.fs.setDoc(window.fs.doc(window.db, 'users', uid), { favorites: this.state.favorites }, { merge: true })
+        .catch((e) => console.warn('Failed to save favorites to Firestore', e));
+    } else {
+      localStorage.setItem('autohub_favs', JSON.stringify(this.state.favorites));
+    }
+  },
+  _saveVehicle(v) {
+    const uid = this._currentUid();
+    if (uid && window.db && window.fs) {
+      window.fs.setDoc(window.fs.doc(window.db, 'users', uid, 'vehicles', v.id), v)
+        .catch((e) => console.warn('Failed to save vehicle to Firestore', e));
+    } else {
+      localStorage.setItem('autohub_vehicles', JSON.stringify(this.state.vehicles));
+    }
+  },
+  _saveBooking(b) {
+    const uid = this._currentUid();
+    if (uid && window.db && window.fs) {
+      window.fs.setDoc(window.fs.doc(window.db, 'users', uid, 'bookings', b.id), b)
+        .catch((e) => console.warn('Failed to save booking to Firestore', e));
+    } else {
+      localStorage.setItem('autohub_bookings', JSON.stringify(this.state.bookings));
+    }
+  },
+  _updateBookingStatus(b) {
+    const uid = this._currentUid();
+    if (uid && window.db && window.fs) {
+      window.fs.setDoc(window.fs.doc(window.db, 'users', uid, 'bookings', b.id), { status: b.status }, { merge: true })
+        .catch((e) => console.warn('Failed to update booking in Firestore', e));
+    } else {
+      localStorage.setItem('autohub_bookings', JSON.stringify(this.state.bookings));
+    }
+  },
   _saveNotifications() { localStorage.setItem('autohub_notifications', JSON.stringify(this.state.notifications)); },
   _saveSavedLocations() { localStorage.setItem('autohub_saved_locations', JSON.stringify(this.state.savedLocations)); },
 
@@ -220,7 +293,7 @@ const App = {
     const i = this.state.favorites.indexOf(id);
     if (i >= 0) { this.state.favorites.splice(i, 1); this.toast(t('t.removedFav')); }
     else { this.state.favorites.push(id); this.toast(t('t.addedFav')); }
-    localStorage.setItem('autohub_favs', JSON.stringify(this.state.favorites));
+    this._saveFavorites();
     this.render();
   },
 
@@ -265,7 +338,7 @@ const App = {
     const color = (document.getElementById('veh-color') || {}).value || '';
     const v = { id: 'v' + Date.now(), type: this.state.registerType, name: model.trim(), plate: number.trim().toUpperCase(), fuel, year: year.trim(), color: color.trim() };
     this.state.vehicles.push(v);
-    this._saveVehicles();
+    this._saveVehicle(v);
     if (this.state.bookingDraft) this.state.bookingDraft.vehicleId = v.id;
     this.toast(t('bk.saved'));
     this.go(this.state.bookingDraft ? 'selectVehicle' : 'profile');
@@ -276,6 +349,7 @@ const App = {
     const p = getProvider(d.providerId);
     const booking = {
       id: 'b' + Date.now(),
+      createdAt: Date.now(),
       providerId: d.providerId,
       vehicleId: d.vehicleId,
       vehicleType: d.vehicleType,
@@ -286,7 +360,7 @@ const App = {
       location: (p && p.address) || 'Phnom Penh',
     };
     this.state.bookings.unshift(booking);
-    this._saveBookings();
+    this._saveBooking(booking);
     this.state.bookingDraft = null;
     this._lastBookingId = booking.id;
     this.bookingSuccess(booking.id);
@@ -303,7 +377,7 @@ const App = {
   },
   cancelBooking(bookingId) {
     const b = this.state.bookings.find(x => x.id === bookingId);
-    if (b) { b.status = 'Cancelled'; this._saveBookings(); this.toast(t('bk.cancelToast')); this.render(); }
+    if (b) { b.status = 'Cancelled'; this._updateBookingStatus(b); this.toast(t('bk.cancelToast')); this.render(); }
   },
 
   // ---- toast ----

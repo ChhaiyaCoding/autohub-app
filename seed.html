@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>AutoHub — Seed Firestore</title>
+  <style>
+    body { font-family: -apple-system, sans-serif; max-width: 480px; margin: 60px auto; padding: 0 20px; color: #14181f; }
+    button { padding: 14px 28px; font-size: 16px; font-weight: 600; cursor: pointer; border: none; border-radius: 10px; background: #ff7a18; color: #fff; }
+    button:disabled { opacity: .5; cursor: default; }
+    pre { text-align: left; background: #f4f4f4; padding: 14px; border-radius: 8px; margin-top: 20px; white-space: pre-wrap; font-size: 13px; min-height: 40px; }
+  </style>
+</head>
+<body>
+  <h2>Seed Providers → Firestore</h2>
+  <p>One-time tool: uploads the mock providers from <code>js/data.js</code> into the <code>providers</code> collection. Safe to run more than once — it writes by <code>id</code>, so it updates instead of duplicating.</p>
+  <button id="seed-btn">Seed Firestore</button>
+  <pre id="log"></pre>
+
+  <script type="module" src="js/firebase-config.js"></script>
+  <script src="js/data.js"></script>
+  <script>
+    const btn = document.getElementById('seed-btn');
+    const log = document.getElementById('log');
+    btn.onclick = async () => {
+      btn.disabled = true;
+      log.textContent = 'Seeding...\n';
+      if (!window.db || !window.fs) {
+        log.textContent += 'Firebase not ready yet — wait a second and try again.';
+        btn.disabled = false;
+        return;
+      }
+      try {
+        for (const p of PROVIDERS) {
+          await window.fs.setDoc(window.fs.doc(window.db, 'providers', p.id), p);
+          log.textContent += `✓ ${p.id}\n`;
+        }
+        log.textContent += `\nDone — ${PROVIDERS.length} providers uploaded. You can close this page now.`;
+      } catch (e) {
+        log.textContent += `\nError: ${e.message}`;
+      }
+      btn.disabled = false;
+    };
+  </script>
+</body>
+</html>

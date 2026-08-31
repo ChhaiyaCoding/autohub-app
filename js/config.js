@@ -24,4 +24,4 @@ const GOOGLE_MAPS_API_KEY = '';
    "Cloud Messaging" tab → "Web configuration" → "Generate key pair"
    under "Web Push certificates".
    ========================================================= */
-const FCM_VAPID_KEY = '';
+const FCM_VAPID_KEY = 'BB44Z5_e-R6_uMRCdEpumGx0MsdMjNucX4_-oVE_mqUI5v4abJYyDSzZLKjvVOUkED5JYV1o26VRCVqn8HndZcE';

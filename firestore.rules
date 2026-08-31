@@ -1,0 +1,19 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Provider catalog — public read (needed for the app's Home/Explore/Detail
+    // screens to load), no client writes. Providers are seeded once via
+    // seed.html; update them from the Firebase Console instead of the client.
+    match /providers/{providerId} {
+      allow read: if true;
+      allow write: if false;
+    }
+
+    // Everything else is denied by default until it's actually needed
+    // (bookings/vehicles/favorites still live in localStorage — see README).
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

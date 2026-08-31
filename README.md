@@ -81,6 +81,15 @@ The Explore "Map" view and the Location picker can show a real, interactive Goog
 
 Leave the key blank and the app runs exactly as before (no other feature is affected). Provider coordinates live on each entry in `js/data.js` (`lat`/`lng`).
 
+## Push notifications (optional)
+
+Profile → "Push Notifications" lets a signed-in user opt in to real, OS-level push (delivered even when no AutoHub tab is open, via `firebase-messaging-sw.js`):
+
+1. Firebase Console → Project Settings (gear icon) → **Cloud Messaging** tab → "Web configuration" → **Generate key pair** under "Web Push certificates".
+2. Paste it into `js/config.js`: `const FCM_VAPID_KEY = 'your-key-here';`
+
+Leave it blank and the action just shows a "not configured" toast — nothing else is affected. Once a user enables it, their device token is saved to `users/{uid}.fcmToken` in Firestore; **sending** a push (e.g. from admin.html) still requires either manually pasting that token into the Firebase Console's Cloud Messaging test-send tool (free, one at a time), or a Cloud Functions trigger on the Blaze plan for full automation — this app ships the free client-side half only.
+
 ## Ready for later
 
 Designed to drop in real backends without restructuring the UI:

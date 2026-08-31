@@ -70,6 +70,54 @@ const App = {
     this.render();
     this._loadProvidersFromFirestore();
     this._watchAuthState();
+    this._initForegroundMessaging();
+  },
+
+  // ---- Push Notifications (Firebase Cloud Messaging) ----
+  // firebase-messaging.js's isSupported() check resolves asynchronously, so
+  // window.messaging may not exist yet right after DOMContentLoaded — retry
+  // briefly rather than silently never attaching the listener.
+  _initForegroundMessaging(attemptsLeft = 15) {
+    if (window.messaging && window.fcmFns) {
+      window.fcmFns.onMessage(window.messaging, (payload) => {
+        const title = (payload.notification && payload.notification.title) || 'AutoHub';
+        const body = (payload.notification && payload.notification.body) || '';
+        this.toast(`${title}: ${body}`);
+      });
+    } else if (attemptsLeft > 0) {
+      setTimeout(() => this._initForegroundMessaging(attemptsLeft - 1), 200);
+    }
+  },
+  _pushStatusLabel() {
+    if (!('Notification' in window) || !window.messaging) return t('t.pushNotSupported');
+    if (Notification.permission === 'denied') return t('t.pushDenied');
+    if (Notification.permission === 'granted') return t('pf.on');
+    return t('pf.off');
+  },
+  async enablePushNotifications() {
+    if (!('Notification' in window) || !window.messaging || !window.fcmFns) {
+      this.toast(t('t.pushNotSupported'));
+      return;
+    }
+    if (!FCM_VAPID_KEY) { this.toast(t('t.pushNotConfigured')); return; }
+    if (Notification.permission === 'denied') { this.toast(t('t.pushDenied')); return; }
+    try {
+      const permission = await Notification.requestPermission();
+      if (permission !== 'granted') { this.render(); return; }
+      const reg = await navigator.serviceWorker.register('firebase-messaging-sw.js');
+      const token = await window.fcmFns.getToken(window.messaging, {
+        vapidKey: FCM_VAPID_KEY, serviceWorkerRegistration: reg,
+      });
+      const uid = this._currentUid();
+      if (uid && token && window.db && window.fs) {
+        await window.fs.setDoc(window.fs.doc(window.db, 'users', uid), { fcmToken: token }, { merge: true });
+      }
+      this.toast(t('t.pushEnabled'));
+      this.render();
+    } catch (e) {
+      console.warn('Push notification setup failed', e);
+      this.toast(t('au.err.generic'));
+    }
   },
 
   // ---- Firebase Authentication ----
@@ -1130,6 +1178,7 @@ const App = {
           ${menu('bookmark', t('pf.locations'), this.state.savedLocations.length + ' ' + t('pf.places'), "App.go('savedLocations')")}
           ${menu('globe', t('pf.language'), t('pf.langName'), "App.toggleLang()")}
           ${menu('bell', t('pf.notifications'), this.state.notificationsEnabled ? t('pf.on') : t('pf.off'), "App.toggleNotificationsEnabled()")}
+          ${menu('bell', t('pf.pushNotif'), this._pushStatusLabel(), "App.enablePushNotifications()")}
           ${menu('help', t('pf.help'), '', "App.toast(t('t.helpSoon'))")}
           ${menu('gear', t('pf.settingsItem'), '', "App.toast(t('t.settingsSoon'))")}
         </div>

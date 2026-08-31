@@ -23,6 +23,7 @@ import {
   sendPasswordResetEmail, updateProfile,
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 import { getAnalytics, isSupported } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-analytics.js";
+import { getMessaging, getToken, onMessage, isSupported as isMessagingSupported } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-messaging.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyC714Ti2VnLCHCZydyBC53fWmsYU_hy8DM",
@@ -51,3 +52,11 @@ window.authFns = {
 };
 
 isSupported().then((ok) => { if (ok) window.analytics = getAnalytics(firebaseApp); });
+
+// Push notifications — only set up on browsers that actually support FCM
+// (e.g. not Safari on old versions, not non-HTTPS contexts other than localhost).
+isMessagingSupported().then((ok) => {
+  if (!ok) return;
+  window.messaging = getMessaging(firebaseApp);
+  window.fcmFns = { getToken, onMessage };
+});

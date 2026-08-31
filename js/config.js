@@ -12,3 +12,16 @@
    referrer restriction is what keeps that safe.
    ========================================================= */
 const GOOGLE_MAPS_API_KEY = '';
+
+/* =========================================================
+   Push Notifications (Firebase Cloud Messaging)
+   Add your Web Push certificate (VAPID key) below to let users
+   opt in to real, OS-level push notifications from Profile.
+   Leave it blank and the "Enable Push Notifications" action just
+   shows a friendly "not configured" message — nothing else breaks.
+
+   Get the key: Firebase Console → Project Settings (gear icon) →
+   "Cloud Messaging" tab → "Web configuration" → "Generate key pair"
+   under "Web Push certificates".
+   ========================================================= */
+const FCM_VAPID_KEY = '';

@@ -26,7 +26,6 @@ const App = {
     notificationsEnabled: true,
     savedLocations: [...DEFAULT_SAVED_LOCATIONS],
     pickingSavedLocation: false,
-    chatThreads: {},   // { [bookingId]: [{from:'user'|'provider', text, time}] }
   },
 
   root: null,
@@ -261,6 +260,8 @@ const App = {
   // ---- navigation ----
   go(route, param = null) {
     this.closeModal();
+    if (this._trackUnsub && route !== 'track') { this._trackUnsub(); this._trackUnsub = null; }
+    if (this._chatUnsub && route !== 'chat') { this._chatUnsub(); this._chatUnsub = null; }
     this.state.route = route;
     this.state.param = param;
     if (route === 'category') this.state.filter = 'nearest';
@@ -346,6 +347,11 @@ const App = {
   confirmBooking() {
     const d = this.state.bookingDraft;
     if (!d) { this.go('home'); return; }
+    const dateLabel = d.date ? this._formatBookingDate(d.date) : 'Jun 24, 2026';
+    const timeLabel = d.time || TIME_SLOTS[0];
+    const conflict = this.state.bookings.some((b) =>
+      b.providerId === d.providerId && b.date === dateLabel && b.time === timeLabel && b.status === 'Confirmed');
+    if (conflict) { this.toast(t('bk.slotTaken')); return; }
     const p = getProvider(d.providerId);
     const booking = {
       id: 'b' + Date.now(),
@@ -354,9 +360,11 @@ const App = {
       vehicleId: d.vehicleId,
       vehicleType: d.vehicleType,
       status: 'Confirmed',
+      progress: 'accepted',
+      progressLog: { accepted: Date.now() },
       service: (p && p.services[0]) || 'General Service',
-      date: 'Jun 24, 2026',
-      time: '10:00 AM – 12:00 PM',
+      date: dateLabel,
+      time: timeLabel,
       location: (p && p.address) || 'Phnom Penh',
     };
     this.state.bookings.unshift(booking);
@@ -469,6 +477,7 @@ const App = {
       case 'activity':   html = this.Activity(); break;
       case 'bookings':   html = this.Bookings(); break;
       case 'selectVehicle':   html = this.SelectVehicle(); showNav = false; break;
+      case 'selectDateTime':  html = this.SelectDateTime(); showNav = false; break;
       case 'registerVehicle': html = this.RegisterVehicle(); showNav = false; break;
       case 'track':      html = this.Track(); showNav = false; break;
       case 'search':     html = this.Search(); showNav = false; break;
@@ -486,6 +495,8 @@ const App = {
     this._enhanceA11y(this.root);
     if (r === 'explore' && this.state.exploreView === 'map') this._initExploreGMap();
     if (r === 'location') this._initLocationGMap();
+    if (r === 'track') this._initTrackListener();
+    if (r === 'chat') this._initChatListener();
   },
 
   // Make every clickable div/span keyboard-focusable and announced as a button,
@@ -1257,9 +1268,52 @@ const App = {
       </div>
 
       <div class="sticky-cta">
-        <button class="btn ${canContinue ? 'btn-orange' : 'btn-ghost'}" ${canContinue ? '' : 'disabled style="opacity:.5"'} onclick="${canContinue ? 'App.confirmBooking()' : ''}">${t('bk.confirm')}</button>
+        <button class="btn ${canContinue ? 'btn-orange' : 'btn-ghost'}" ${canContinue ? '' : 'disabled style="opacity:.5"'} onclick="${canContinue ? "App.go('selectDateTime')" : ''}">${t('bk.confirm')}</button>
       </div>
     </div>`;
+  },
+
+  // =========================================================
+  // SCREEN: Select Date & Time (booking step 1c)
+  // =========================================================
+  SelectDateTime() {
+    const d = this.state.bookingDraft || {};
+    const today = new Date();
+    const minDate = today.toISOString().slice(0, 10);
+    const maxD = new Date(today); maxD.setDate(maxD.getDate() + 30);
+    const maxDate = maxD.toISOString().slice(0, 10);
+    const canConfirm = !!(d.date && d.time);
+    return `<div class="screen no-nav cta-screen">
+      ${TopBar(t('bk.selectDateTimeTitle'))}
+      <div class="pad" style="padding-top:8px">
+        <div class="h2" style="text-align:center;margin:6px 0 20px">${t('bk.selectDateTimeHeading')}</div>
+        <label class="field-lbl">${t('bk.date')}</label>
+        <div class="field"><input id="booking-date" type="date" min="${minDate}" max="${maxDate}" value="${d.date || ''}" onchange="App.pickBookingDate(this.value)" /></div>
+        <label class="field-lbl" style="margin-top:18px">${t('bk.time')}</label>
+        <div class="qtype-grid">
+          ${TIME_SLOTS.map(slot => `<div class="qtype ${d.time === slot ? 'sel' : ''}" onclick="App.pickBookingTime('${slot}')">
+            <div class="qtype-l">${slot}</div>
+          </div>`).join('')}
+        </div>
+      </div>
+      <div class="sticky-cta">
+        <button class="btn ${canConfirm ? 'btn-orange' : 'btn-ghost'}" ${canConfirm ? '' : 'disabled style="opacity:.5"'} onclick="${canConfirm ? 'App.confirmBooking()' : ''}">${t('bk.confirm')}</button>
+      </div>
+    </div>`;
+  },
+  pickBookingDate(value) {
+    if (!this.state.bookingDraft) return;
+    this.state.bookingDraft.date = value;
+    this.render();
+  },
+  pickBookingTime(slot) {
+    if (!this.state.bookingDraft) return;
+    this.state.bookingDraft.time = slot;
+    this.render();
+  },
+  _formatBookingDate(isoDate) {
+    const dt = new Date(isoDate + 'T00:00:00');
+    return dt.toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' });
   },
 
   // =========================================================
@@ -1387,18 +1441,24 @@ const App = {
   // =========================================================
   // SCREEN: Track Service (booking step 3)
   // =========================================================
+  PROGRESS_STEPS: ['accepted', 'enroute', 'arrived', 'inprogress'],
+  _fmtStepTime(ms) {
+    return ms ? new Date(ms).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }) : t('tr.pending');
+  },
   Track() {
     const b = this.state.bookings.find(x => x.id === this.state.param) || this.state.bookings[0];
     if (!b) return this.Bookings();
     const p = getProvider(b.providerId);
     const v = this.state.vehicles.find(x => x.id === b.vehicleId);
     const vehType = v ? t('bk.' + v.type) : (b.vehicleType ? t('bk.' + b.vehicleType) : t('bk.car'));
-    const steps = [
-      { k: 'tr.accepted',  time: '2:15 PM', state: 'done' },
-      { k: 'tr.enroute',   time: '2:16 PM', state: 'active' },
-      { k: 'tr.arrived',   time: t('tr.pending'), state: 'pending' },
-      { k: 'tr.inprogress',time: t('tr.pending'), state: 'pending' },
-    ];
+    const order = this.PROGRESS_STEPS;
+    const curIdx = Math.max(0, order.indexOf(b.progress || 'accepted'));
+    const log = b.progressLog || {};
+    const steps = order.map((key, i) => ({
+      k: 'tr.' + key,
+      time: i <= curIdx ? this._fmtStepTime(log[key]) : t('tr.pending'),
+      state: i < curIdx ? 'done' : (i === curIdx ? 'active' : 'pending'),
+    }));
 
     return `<div class="screen no-nav">
       ${TopBar(t('tr.title'))}
@@ -1438,46 +1498,63 @@ const App = {
       <div class="chat-fab" onclick="App.go('chat','${b.id}')">${icon('share')}</div>
     </div>`;
   },
+  _trackUnsub: null,
+  _initTrackListener() {
+    if (this._trackUnsub) { this._trackUnsub(); this._trackUnsub = null; }
+    const b = this.state.bookings.find(x => x.id === this.state.param) || this.state.bookings[0];
+    const uid = this._currentUid();
+    if (!b || !uid || !window.db || !window.fs) return;
+    this._trackUnsub = window.fs.onSnapshot(window.fs.doc(window.db, 'users', uid, 'bookings', b.id), (snap) => {
+      if (!snap.exists()) return;
+      const updated = { id: snap.id, ...snap.data() };
+      const idx = this.state.bookings.findIndex((x) => x.id === b.id);
+      if (idx >= 0) this.state.bookings[idx] = updated;
+      if (this.state.route === 'track') this.render();
+    });
+  },
 
   // =========================================================
-  // SCREEN: Chat (mock — Track Service)
+  // SCREEN: Chat (real-time — Firestore, per booking)
   // =========================================================
-  _seedChat(bookingId, providerName) {
-    if (!this.state.chatThreads[bookingId]) {
-      this.state.chatThreads[bookingId] = [
-        { from: 'provider', text: t('chat.seed1'), time: '2:16 PM' },
-      ];
-    }
-    return this.state.chatThreads[bookingId];
+  _chatUnsub: null,
+  _fmtChatTime(ms) {
+    return ms ? new Date(ms).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }) : '';
+  },
+  _initChatListener() {
+    if (this._chatUnsub) { this._chatUnsub(); this._chatUnsub = null; }
+    const bookingId = this.state.param;
+    const uid = this._currentUid();
+    if (!bookingId || !uid || !window.db || !window.fs) return;
+    const q = window.fs.query(
+      window.fs.collection(window.db, 'users', uid, 'bookings', bookingId, 'messages'),
+      window.fs.orderBy('createdAt', 'asc'));
+    this._chatUnsub = window.fs.onSnapshot(q, (snap) => {
+      this._renderChatMessages(snap.docs.map((d) => d.data()));
+    });
   },
   sendChatMessage(bookingId) {
     const input = document.getElementById('chat-input');
     const text = (input.value || '').trim();
     if (!text) return;
-    const thread = this.state.chatThreads[bookingId];
-    thread.push({ from: 'user', text, time: 'Now' });
+    const uid = this._currentUid();
+    if (!uid || !window.db || !window.fs) return;
     input.value = '';
-    this._renderChatMessages(bookingId);
-    clearTimeout(this._chatReplyT);
-    this._chatReplyT = setTimeout(() => {
-      thread.push({ from: 'provider', text: t('chat.autoReply'), time: 'Now' });
-      this._renderChatMessages(bookingId);
-    }, 1200);
+    window.fs.addDoc(window.fs.collection(window.db, 'users', uid, 'bookings', bookingId, 'messages'), {
+      from: 'user', text, createdAt: Date.now(),
+    }).catch((e) => console.warn('Failed to send message', e));
   },
-  _renderChatMessages(bookingId) {
+  _renderChatMessages(msgs) {
     const wrap = document.getElementById('chat-messages');
     if (!wrap) return;
-    const thread = this.state.chatThreads[bookingId] || [];
-    wrap.innerHTML = thread.map(m => `<div class="chat-row ${m.from === 'user' ? 'mine' : ''}">
-      <div class="chat-bubble">${m.text}<span class="chat-time">${m.time}</span></div>
-    </div>`).join('');
+    wrap.innerHTML = msgs.length ? msgs.map((m) => `<div class="chat-row ${m.from === 'user' ? 'mine' : ''}">
+      <div class="chat-bubble">${m.text}<span class="chat-time">${this._fmtChatTime(m.createdAt)}</span></div>
+    </div>`).join('') : `<div class="chat-empty">${t('chat.empty')}</div>`;
     wrap.scrollTop = wrap.scrollHeight;
   },
   Chat() {
     const b = this.state.bookings.find(x => x.id === this.state.param);
     if (!b) return this.Bookings();
     const p = getProvider(b.providerId);
-    const thread = this._seedChat(b.id, p.name);
     return `<div class="screen no-nav chat-screen">
       <div class="topbar">
         <div class="icon-btn" onclick="App.go('track','${b.id}')">${icon('back')}</div>
@@ -1485,9 +1562,7 @@ const App = {
         <div class="title" style="text-align:left;flex:1">${p.name}<div class="tp-role" style="font-weight:400">${t('tr.mechanic')}</div></div>
         <div class="icon-btn" onclick="App.call('${p.id}')">${icon('phone')}</div>
       </div>
-      <div class="chat-messages" id="chat-messages">${thread.map(m => `<div class="chat-row ${m.from === 'user' ? 'mine' : ''}">
-        <div class="chat-bubble">${m.text}<span class="chat-time">${m.time}</span></div>
-      </div>`).join('')}</div>
+      <div class="chat-messages" id="chat-messages"></div>
       <div class="chat-input-bar">
         <input id="chat-input" placeholder="${t('chat.placeholder')}" onkeydown="if(event.key==='Enter')App.sendChatMessage('${b.id}')" />
         <div class="chat-send" onclick="App.sendChatMessage('${b.id}')">${icon('nav')}</div>

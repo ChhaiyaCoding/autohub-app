@@ -401,6 +401,12 @@ const VEHICLE_TYPES = [
   { id: 'truck',   label: 'Truck',   icon: 'tow' },
 ];
 
+// ---- Booking time slots (hourly, skips the lunch hour) ----
+const TIME_SLOTS = [
+  '8:00 AM – 9:00 AM', '9:00 AM – 10:00 AM', '10:00 AM – 11:00 AM', '11:00 AM – 12:00 PM',
+  '1:00 PM – 2:00 PM', '2:00 PM – 3:00 PM', '3:00 PM – 4:00 PM', '4:00 PM – 5:00 PM', '5:00 PM – 6:00 PM',
+];
+
 // ---- Registered vehicles (mock starting state) ----
 const DEFAULT_VEHICLES = [
   { id: 'v1', type: 'car',  name: 'Toyota Highlander', plate: '2AB-1234', fuel: 'hybrid' },

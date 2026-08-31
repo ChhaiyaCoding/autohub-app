@@ -105,9 +105,21 @@
 
     <div id="panel-bookings" class="hidden">
       <table>
-        <thead><tr><th>Provider</th><th>User</th><th>Service</th><th>Date / Time</th><th>Status</th></tr></thead>
+        <thead><tr><th>Provider</th><th>User</th><th>Service</th><th>Date / Time</th><th>Status</th><th>Progress</th><th></th></tr></thead>
         <tbody id="bookings-body"></tbody>
       </table>
+    </div>
+  </div>
+
+  <div class="modal-bg" id="chat-modal">
+    <div class="modal" style="max-width:460px;display:flex;flex-direction:column;height:70vh">
+      <h2 id="chat-modal-title">Chat</h2>
+      <div id="chat-modal-messages" style="flex:1;overflow-y:auto;margin:12px 0;padding:10px;background:var(--bg);border-radius:10px;display:flex;flex-direction:column;gap:8px"></div>
+      <div style="display:flex;gap:8px">
+        <input id="chat-modal-input" placeholder="Reply to customer…" onkeydown="if(event.key==='Enter')sendAdminChatMessage()" />
+        <button class="btn btn-orange" onclick="sendAdminChatMessage()">Send</button>
+      </div>
+      <button class="btn btn-ghost" style="margin-top:12px" onclick="closeChatModal()">Close</button>
     </div>
   </div>
 
@@ -315,27 +327,86 @@
     }
 
     // ---- Bookings (collection group — every user's bookings at once) ----
+    const PROGRESS_STEPS = ['accepted', 'enroute', 'arrived', 'inprogress', 'completed'];
+    let currentBookings = [];
+
     async function loadBookings() {
       const body = document.getElementById('bookings-body');
       try {
         const snap = await window.fs.getDocs(window.fs.collectionGroup(window.db, 'bookings'));
-        const rows = snap.docs.map(d => {
+        currentBookings = snap.docs.map(d => {
           const b = d.data();
           const uid = d.ref.parent.parent.id;
           const provider = currentProviders.find(p => p.id === b.providerId);
           return { ...b, id: d.id, uid, providerName: provider ? provider.name : b.providerId };
         }).sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
-        body.innerHTML = rows.map(b => `
+        body.innerHTML = currentBookings.map((b, i) => `
           <tr>
             <td>${b.providerName}</td>
             <td class="uid">${b.uid.slice(0, 10)}…</td>
             <td>${b.service || ''}</td>
             <td>${b.date || ''} · ${b.time || ''}</td>
             <td><span class="badge ${b.status}">${b.status}</span></td>
-          </tr>`).join('') || `<tr><td colspan="5" class="empty">No bookings yet.</td></tr>`;
+            <td>
+              <select onchange="updateBookingProgress(${i}, this.value)" ${b.status !== 'Confirmed' ? 'disabled' : ''}>
+                ${PROGRESS_STEPS.map(s => `<option value="${s}" ${b.progress === s ? 'selected' : ''}>${s}</option>`).join('')}
+              </select>
+            </td>
+            <td><button class="btn btn-ghost btn-sm" onclick="openChatModal(${i})">💬 Chat</button></td>
+          </tr>`).join('') || `<tr><td colspan="7" class="empty">No bookings yet.</td></tr>`;
       } catch (e) {
-        body.innerHTML = `<tr><td colspan="5" class="empty">Couldn't load bookings: ${e.message}</td></tr>`;
+        body.innerHTML = `<tr><td colspan="7" class="empty">Couldn't load bookings: ${e.message}</td></tr>`;
       }
+    }
+
+    async function updateBookingProgress(i, stage) {
+      const b = currentBookings[i];
+      const ref = window.fs.doc(window.db, 'users', b.uid, 'bookings', b.id);
+      const patch = { progress: stage };
+      patch['progressLog.' + stage] = Date.now();
+      try {
+        await window.fs.setDoc(ref, patch, { merge: true });
+        b.progress = stage;
+      } catch (e) {
+        alert('Failed to update: ' + e.message);
+        loadBookings();
+      }
+    }
+
+    // ---- Chat (real-time — reply to a customer for one booking) ----
+    let chatUnsub = null;
+    let chatBooking = null;
+    function openChatModal(i) {
+      chatBooking = currentBookings[i];
+      document.getElementById('chat-modal-title').textContent = 'Chat — ' + chatBooking.providerName;
+      document.getElementById('chat-modal').classList.add('open');
+      if (chatUnsub) chatUnsub();
+      const q = window.fs.query(
+        window.fs.collection(window.db, 'users', chatBooking.uid, 'bookings', chatBooking.id, 'messages'),
+        window.fs.orderBy('createdAt', 'asc'));
+      chatUnsub = window.fs.onSnapshot(q, (snap) => {
+        const wrap = document.getElementById('chat-modal-messages');
+        const msgs = snap.docs.map(d => d.data());
+        wrap.innerHTML = msgs.map(m => `
+          <div style="align-self:${m.from === 'admin' ? 'flex-end' : 'flex-start'};max-width:78%;background:${m.from === 'admin' ? 'var(--orange)' : '#fff'};color:${m.from === 'admin' ? '#fff' : 'var(--text)'};padding:8px 12px;border-radius:12px;font-size:13.5px">
+            ${m.text}
+          </div>`).join('') || '<div class="muted" style="text-align:center;padding:20px">No messages yet.</div>';
+        wrap.scrollTop = wrap.scrollHeight;
+      });
+    }
+    function closeChatModal() {
+      document.getElementById('chat-modal').classList.remove('open');
+      if (chatUnsub) { chatUnsub(); chatUnsub = null; }
+      chatBooking = null;
+    }
+    async function sendAdminChatMessage() {
+      const input = document.getElementById('chat-modal-input');
+      const text = input.value.trim();
+      if (!text || !chatBooking) return;
+      input.value = '';
+      await window.fs.addDoc(
+        window.fs.collection(window.db, 'users', chatBooking.uid, 'bookings', chatBooking.id, 'messages'),
+        { from: 'admin', text, createdAt: Date.now() });
     }
   </script>
 </body>

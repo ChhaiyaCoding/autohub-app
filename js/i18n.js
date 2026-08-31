@@ -131,6 +131,8 @@ const I18N = {
     // Booking journey
     'bk.bookNow': 'Book Now', 'bk.from': 'From', 'bk.bookingAmount': 'Booking amount',
     'bk.selectTitle': 'Select', 'bk.selectHeading': 'Select vehicle to book a service',
+    'bk.selectDateTimeTitle': 'Date & Time', 'bk.selectDateTimeHeading': 'When should we schedule your service?',
+    'bk.date': 'Date', 'bk.time': 'Time slot', 'bk.slotTaken': "You already have a booking with this provider at that time.",
     'bk.registered': 'Your Registered Vehicles',
     'bk.addNew': 'Add New Vehicle', 'bk.addNewSub': 'Register a new vehicle to your account',
     'bk.other': 'Other Vehicle', 'bk.otherSub': "Don't want to register? Use quick booking",
@@ -238,8 +240,7 @@ const I18N = {
 
     // Chat (mock — Track Service)
     'chat.placeholder': 'Type a message…',
-    'chat.seed1': "Hi! I'm on my way to your location now.",
-    'chat.autoReply': 'Got it, thanks! See you soon.',
+    'chat.empty': 'No messages yet — say hello!',
 
     // Toasts / coming soon
     't.soon': 'Coming Soon', 't.searchSoon': 'Search is coming soon',
@@ -378,6 +379,8 @@ const I18N = {
     // Booking journey
     'bk.bookNow': 'កក់ឥឡូវ', 'bk.from': 'ចាប់ពី', 'bk.bookingAmount': 'ថ្លៃកក់',
     'bk.selectTitle': 'ជ្រើសរើស', 'bk.selectHeading': 'ជ្រើសរើសរថយន្តដើម្បីកក់សេវា',
+    'bk.selectDateTimeTitle': 'កាលបរិច្ឆេទ និងម៉ោង', 'bk.selectDateTimeHeading': 'តើអ្នកចង់ណាត់សេវានៅពេលណា?',
+    'bk.date': 'កាលបរិច្ឆេទ', 'bk.time': 'ម៉ោង', 'bk.slotTaken': 'អ្នកមានការកក់ជាមួយអ្នកផ្តល់សេវានេះនៅម៉ោងនោះរួចហើយ។',
     'bk.registered': 'រថយន្តដែលអ្នកបានចុះឈ្មោះ',
     'bk.addNew': 'បន្ថែមរថយន្តថ្មី', 'bk.addNewSub': 'ចុះឈ្មោះរថយន្តថ្មីទៅគណនីរបស់អ្នក',
     'bk.other': 'រថយន្តផ្សេងទៀត', 'bk.otherSub': 'មិនចង់ចុះឈ្មោះ? ប្រើការកក់រហ័ស',
@@ -485,8 +488,7 @@ const I18N = {
 
     // Chat (mock — Track Service)
     'chat.placeholder': 'វាយសារ...',
-    'chat.seed1': 'សួស្តី! ខ្ញុំកំពុងធ្វើដំណើរទៅកាន់ទីតាំងរបស់អ្នកឥឡូវនេះ។',
-    'chat.autoReply': 'ទទួលបានហើយ អរគុណ!ជួបគ្នាឆាប់ៗនេះ។',
+    'chat.empty': 'មិនទាន់មានសារនៅឡើយទេ — ស្វាគមន៍!',
 
     // Toasts / coming soon
     't.soon': 'នឹងមានឆាប់ៗ', 't.searchSoon': 'ការស្វែងរកនឹងមានឆាប់ៗ',

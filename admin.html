@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AutoHub — Admin</title>
+  <style>
+    :root {
+      --orange: #ff7a18; --orange-soft: rgba(255,122,24,.12);
+      --bg: #f3f4f7; --surface: #ffffff; --line: rgba(20,24,33,0.1);
+      --text: #14181f; --text-dim: #5d6573; --danger: #ff3b48; --green: #2bd47a;
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: -apple-system, "Segoe UI", sans-serif; background: var(--bg); color: var(--text); }
+    .wrap { max-width: 480px; margin: 80px auto; padding: 0 20px; }
+    .wide { max-width: 1080px; margin: 0 auto; padding: 24px; }
+    h1 { font-size: 22px; margin: 0 0 6px; }
+    .muted { color: var(--text-dim); font-size: 14px; }
+    .card { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 24px; box-shadow: 0 8px 22px -14px rgba(20,24,33,.16); }
+    label { display: block; font-size: 12.5px; font-weight: 600; color: var(--text-dim); margin: 14px 0 5px; }
+    input, select, textarea { width: 100%; padding: 10px 12px; border: 1px solid var(--line); border-radius: 9px; font-size: 14px; font-family: inherit; background: #fff; color: var(--text); }
+    textarea { resize: vertical; min-height: 60px; }
+    button { cursor: pointer; font-family: inherit; }
+    .btn { display: inline-flex; align-items: center; gap: 6px; padding: 10px 18px; border-radius: 9px; border: none; font-weight: 700; font-size: 14px; }
+    .btn-orange { background: var(--orange); color: #fff; }
+    .btn-ghost { background: var(--orange-soft); color: var(--orange); }
+    .btn-danger { background: rgba(255,59,72,.12); color: var(--danger); }
+    .btn-sm { padding: 6px 12px; font-size: 12.5px; }
+    .err { color: var(--danger); font-size: 13px; margin-top: 10px; min-height: 16px; }
+    .topbar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; flex-wrap: wrap; gap: 12px; }
+    .topbar .who { font-size: 13px; color: var(--text-dim); }
+    .tabs { display: flex; gap: 8px; margin-bottom: 18px; }
+    .tab { padding: 9px 18px; border-radius: 9px; background: var(--surface); border: 1px solid var(--line); font-weight: 700; font-size: 13.5px; color: var(--text-dim); }
+    .tab.active { background: var(--orange); color: #fff; border-color: var(--orange); }
+    table { width: 100%; border-collapse: collapse; background: var(--surface); border-radius: 12px; overflow: hidden; box-shadow: 0 8px 22px -14px rgba(20,24,33,.16); }
+    th, td { text-align: left; padding: 10px 12px; font-size: 13px; border-bottom: 1px solid var(--line); }
+    th { background: var(--bg); color: var(--text-dim); font-size: 11.5px; text-transform: uppercase; letter-spacing: .03em; }
+    tr:last-child td { border-bottom: none; }
+    .badge { display: inline-block; padding: 3px 9px; border-radius: 999px; font-size: 11px; font-weight: 700; }
+    .badge.on { background: rgba(43,212,122,.14); color: var(--green); }
+    .badge.off { background: rgba(20,24,33,.08); color: var(--text-dim); }
+    .badge.Confirmed { background: rgba(255,122,24,.14); color: var(--orange); }
+    .badge.Completed { background: rgba(43,212,122,.14); color: var(--green); }
+    .badge.Cancelled { background: rgba(255,59,72,.12); color: var(--danger); }
+    .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .row4 { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 12px; }
+    .checks { display: flex; gap: 16px; flex-wrap: wrap; margin-top: 14px; }
+    .checks label { display: flex; align-items: center; gap: 6px; font-weight: 600; color: var(--text); margin: 0; }
+    .checks input { width: auto; }
+    .modal-bg { position: fixed; inset: 0; background: rgba(20,24,33,.5); display: none; align-items: flex-start; justify-content: center; padding: 40px 20px; overflow-y: auto; z-index: 50; }
+    .modal-bg.open { display: flex; }
+    .modal { background: var(--surface); border-radius: 16px; padding: 26px; max-width: 640px; width: 100%; }
+    .modal h2 { margin: 0 0 4px; font-size: 18px; }
+    .hidden { display: none; }
+    .toolbar { display: flex; justify-content: flex-end; margin-bottom: 14px; }
+    .uid { font-family: monospace; font-size: 11.5px; color: var(--text-dim); }
+    .empty { text-align: center; padding: 40px; color: var(--text-dim); font-size: 14px; }
+  </style>
+</head>
+<body>
+
+  <div id="login-view" class="wrap">
+    <div class="card">
+      <h1>AutoHub Admin</h1>
+      <p class="muted">Sign in with an admin account.</p>
+      <label>Email</label>
+      <input id="login-email" type="email" placeholder="you@example.com" />
+      <label>Password</label>
+      <input id="login-password" type="password" placeholder="••••••••" onkeydown="if(event.key==='Enter')doLogin()" />
+      <button class="btn btn-orange" style="margin-top:18px;width:100%;justify-content:center" onclick="doLogin()">Sign In</button>
+      <div class="err" id="login-err"></div>
+    </div>
+  </div>
+
+  <div id="denied-view" class="wrap hidden">
+    <div class="card" style="text-align:center">
+      <h1>Access Denied</h1>
+      <p class="muted">This account isn't on the admin allowlist. Ask an existing admin to add your UID to the <code>admins</code> collection in the Firebase Console.</p>
+      <div class="uid" id="denied-uid" style="margin:14px 0"></div>
+      <button class="btn btn-ghost" onclick="doLogout()">Sign out</button>
+    </div>
+  </div>
+
+  <div id="dash-view" class="wide hidden">
+    <div class="topbar">
+      <h1 style="margin:0">AutoHub Admin</h1>
+      <div style="display:flex;align-items:center;gap:14px">
+        <span class="who" id="who"></span>
+        <button class="btn btn-ghost btn-sm" onclick="doLogout()">Sign out</button>
+      </div>
+    </div>
+
+    <div class="tabs">
+      <button class="tab active" id="tab-providers" onclick="switchTab('providers')">Providers</button>
+      <button class="tab" id="tab-bookings" onclick="switchTab('bookings')">Bookings</button>
+    </div>
+
+    <div id="panel-providers">
+      <div class="toolbar"><button class="btn btn-orange" onclick="openProviderForm(null)">+ Add Provider</button></div>
+      <table>
+        <thead><tr><th>Name</th><th>Category</th><th>Rating</th><th>Status</th><th></th></tr></thead>
+        <tbody id="providers-body"></tbody>
+      </table>
+    </div>
+
+    <div id="panel-bookings" class="hidden">
+      <table>
+        <thead><tr><th>Provider</th><th>User</th><th>Service</th><th>Date / Time</th><th>Status</th></tr></thead>
+        <tbody id="bookings-body"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="modal-bg" id="provider-modal">
+    <div class="modal">
+      <h2 id="pf-title">Add Provider</h2>
+      <p class="muted" id="pf-sub">Fields match the app's provider schema.</p>
+      <label>ID <span class="muted" id="pf-id-hint">(lowercase, no spaces — can't change later)</span></label>
+      <input id="pf-id" placeholder="e.g. quick-fix-garage" />
+      <div class="row2">
+        <div><label>Name</label><input id="pf-name" /></div>
+        <div><label>Category</label><input id="pf-category" placeholder="Mechanic, Towing, ..." /></div>
+      </div>
+      <div class="row4">
+        <div><label>Rating</label><input id="pf-rating" type="number" step="0.1" min="0" max="5" /></div>
+        <div><label>Reviews</label><input id="pf-reviews" type="number" /></div>
+        <div><label>Distance (km)</label><input id="pf-distance" type="number" step="0.1" /></div>
+        <div><label>ETA</label><input id="pf-eta" placeholder="8 min" /></div>
+      </div>
+      <label>Address</label>
+      <input id="pf-address" />
+      <div class="row2">
+        <div><label>Phone</label><input id="pf-phone" /></div>
+        <div><label>Hours</label><input id="pf-hours" placeholder="Mon–Sun · 7:00 AM – 8:00 PM" /></div>
+      </div>
+      <div class="row2">
+        <div><label>Latitude</label><input id="pf-lat" type="number" step="0.0001" /></div>
+        <div><label>Longitude</label><input id="pf-lng" type="number" step="0.0001" /></div>
+      </div>
+      <div class="row2">
+        <div><label>Cover color 1</label><input id="pf-color1" placeholder="#ff7a18" /></div>
+        <div><label>Cover color 2</label><input id="pf-color2" placeholder="#2b1502" /></div>
+      </div>
+      <label>Tags <span class="muted">(comma-separated)</span></label>
+      <input id="pf-tags" placeholder="Full Service, Diagnostics, Engine" />
+      <label>Services <span class="muted">(comma-separated)</span></label>
+      <input id="pf-services" placeholder="Engine Repair, Brake Service, ..." />
+      <label>Description</label>
+      <textarea id="pf-description"></textarea>
+      <div class="checks">
+        <label><input id="pf-open" type="checkbox" /> Open now</label>
+        <label><input id="pf-open24" type="checkbox" /> 24/7</label>
+        <label><input id="pf-mobile" type="checkbox" /> Mobile service</label>
+        <label><input id="pf-emergency" type="checkbox" /> Emergency</label>
+        <label><input id="pf-featured" type="checkbox" /> Featured</label>
+      </div>
+      <div class="err" id="pf-err"></div>
+      <div style="display:flex;gap:10px;margin-top:20px">
+        <button class="btn btn-orange" onclick="saveProvider()">Save</button>
+        <button class="btn btn-ghost" onclick="closeProviderForm()">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <script type="module" src="js/firebase-config.js"></script>
+  <script>
+    let currentProviders = [];
+    let editingId = null;
+
+    function show(id) {
+      ['login-view','denied-view','dash-view'].forEach(v => document.getElementById(v).classList.toggle('hidden', v !== id));
+    }
+
+    async function doLogin() {
+      const email = document.getElementById('login-email').value.trim();
+      const password = document.getElementById('login-password').value;
+      const err = document.getElementById('login-err');
+      err.textContent = '';
+      if (!email || !password) { err.textContent = 'Enter email and password.'; return; }
+      try {
+        await window.authFns.signInWithEmailAndPassword(window.auth, email, password);
+      } catch (e) {
+        err.textContent = e.message;
+      }
+    }
+    async function doLogout() {
+      await window.authFns.signOut(window.auth);
+    }
+
+    function waitForFirebase() {
+      return new Promise((resolve) => {
+        (function check() {
+          if (window.auth && window.authFns && window.db && window.fs) resolve();
+          else setTimeout(check, 50);
+        })();
+      });
+    }
+
+    waitForFirebase().then(() => {
+      window.authFns.onAuthStateChanged(window.auth, async (user) => {
+        if (!user) { show('login-view'); return; }
+        const adminSnap = await window.fs.getDoc(window.fs.doc(window.db, 'admins', user.uid));
+        if (!adminSnap.exists()) {
+          document.getElementById('denied-uid').textContent = 'Your UID: ' + user.uid;
+          show('denied-view');
+          return;
+        }
+        document.getElementById('who').textContent = user.email;
+        show('dash-view');
+        loadProviders();
+        loadBookings();
+      });
+    });
+
+    function switchTab(name) {
+      document.getElementById('tab-providers').classList.toggle('active', name === 'providers');
+      document.getElementById('tab-bookings').classList.toggle('active', name === 'bookings');
+      document.getElementById('panel-providers').classList.toggle('hidden', name !== 'providers');
+      document.getElementById('panel-bookings').classList.toggle('hidden', name !== 'bookings');
+    }
+
+    // ---- Providers ----
+    async function loadProviders() {
+      const snap = await window.fs.getDocs(window.fs.collection(window.db, 'providers'));
+      currentProviders = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      const body = document.getElementById('providers-body');
+      body.innerHTML = currentProviders.map(p => `
+        <tr>
+          <td><b>${p.name || ''}</b></td>
+          <td>${p.category || ''}</td>
+          <td>${(p.rating || 0).toFixed(1)} ★ (${p.reviews || 0})</td>
+          <td><span class="badge ${p.open ? 'on' : 'off'}">${p.open ? 'Open' : 'Closed'}</span></td>
+          <td style="text-align:right;white-space:nowrap">
+            <button class="btn btn-ghost btn-sm" onclick="openProviderForm('${p.id}')">Edit</button>
+            <button class="btn btn-danger btn-sm" onclick="deleteProvider('${p.id}')">Delete</button>
+          </td>
+        </tr>`).join('') || `<tr><td colspan="5" class="empty">No providers yet.</td></tr>`;
+    }
+
+    function openProviderForm(id) {
+      editingId = id;
+      const p = id ? currentProviders.find(x => x.id === id) : null;
+      document.getElementById('pf-title').textContent = id ? 'Edit Provider' : 'Add Provider';
+      document.getElementById('pf-id').value = p ? p.id : '';
+      document.getElementById('pf-id').disabled = !!id;
+      document.getElementById('pf-id-hint').style.display = id ? 'none' : 'inline';
+      document.getElementById('pf-name').value = p?.name || '';
+      document.getElementById('pf-category').value = p?.category || '';
+      document.getElementById('pf-rating').value = p?.rating ?? '';
+      document.getElementById('pf-reviews').value = p?.reviews ?? '';
+      document.getElementById('pf-distance').value = p?.distance ?? '';
+      document.getElementById('pf-eta').value = p?.eta || '';
+      document.getElementById('pf-address').value = p?.address || '';
+      document.getElementById('pf-phone').value = p?.phone || '';
+      document.getElementById('pf-hours').value = p?.hours || '';
+      document.getElementById('pf-lat').value = p?.lat ?? '';
+      document.getElementById('pf-lng').value = p?.lng ?? '';
+      document.getElementById('pf-color1').value = p?.color1 || '#ff7a18';
+      document.getElementById('pf-color2').value = p?.color2 || '#2b1502';
+      document.getElementById('pf-tags').value = (p?.tags || []).join(', ');
+      document.getElementById('pf-services').value = (p?.services || []).join(', ');
+      document.getElementById('pf-description').value = p?.description || '';
+      document.getElementById('pf-open').checked = !!p?.open;
+      document.getElementById('pf-open24').checked = !!p?.open24;
+      document.getElementById('pf-mobile').checked = !!p?.mobile;
+      document.getElementById('pf-emergency').checked = !!p?.emergency;
+      document.getElementById('pf-featured').checked = !!p?.featured;
+      document.getElementById('pf-err').textContent = '';
+      document.getElementById('provider-modal').classList.add('open');
+    }
+    function closeProviderForm() {
+      document.getElementById('provider-modal').classList.remove('open');
+    }
+    async function saveProvider() {
+      const id = editingId || document.getElementById('pf-id').value.trim();
+      const err = document.getElementById('pf-err');
+      if (!id || !document.getElementById('pf-name').value.trim()) {
+        err.textContent = 'ID and Name are required.'; return;
+      }
+      const data = {
+        name: document.getElementById('pf-name').value.trim(),
+        category: document.getElementById('pf-category').value.trim(),
+        rating: parseFloat(document.getElementById('pf-rating').value) || 0,
+        reviews: parseInt(document.getElementById('pf-reviews').value) || 0,
+        distance: parseFloat(document.getElementById('pf-distance').value) || 0,
+        eta: document.getElementById('pf-eta').value.trim(),
+        address: document.getElementById('pf-address').value.trim(),
+        phone: document.getElementById('pf-phone').value.trim(),
+        hours: document.getElementById('pf-hours').value.trim(),
+        lat: parseFloat(document.getElementById('pf-lat').value) || 0,
+        lng: parseFloat(document.getElementById('pf-lng').value) || 0,
+        color1: document.getElementById('pf-color1').value.trim() || '#ff7a18',
+        color2: document.getElementById('pf-color2').value.trim() || '#2b1502',
+        tags: document.getElementById('pf-tags').value.split(',').map(s => s.trim()).filter(Boolean),
+        services: document.getElementById('pf-services').value.split(',').map(s => s.trim()).filter(Boolean),
+        description: document.getElementById('pf-description').value.trim(),
+        open: document.getElementById('pf-open').checked,
+        open24: document.getElementById('pf-open24').checked,
+        mobile: document.getElementById('pf-mobile').checked,
+        emergency: document.getElementById('pf-emergency').checked,
+        featured: document.getElementById('pf-featured').checked,
+      };
+      try {
+        await window.fs.setDoc(window.fs.doc(window.db, 'providers', id), data);
+        closeProviderForm();
+        loadProviders();
+      } catch (e) {
+        err.textContent = e.message;
+      }
+    }
+    async function deleteProvider(id) {
+      if (!confirm('Delete this provider? This cannot be undone.')) return;
+      await window.fs.deleteDoc(window.fs.doc(window.db, 'providers', id));
+      loadProviders();
+    }
+
+    // ---- Bookings (collection group — every user's bookings at once) ----
+    async function loadBookings() {
+      const body = document.getElementById('bookings-body');
+      try {
+        const snap = await window.fs.getDocs(window.fs.collectionGroup(window.db, 'bookings'));
+        const rows = snap.docs.map(d => {
+          const b = d.data();
+          const uid = d.ref.parent.parent.id;
+          const provider = currentProviders.find(p => p.id === b.providerId);
+          return { ...b, id: d.id, uid, providerName: provider ? provider.name : b.providerId };
+        }).sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+        body.innerHTML = rows.map(b => `
+          <tr>
+            <td>${b.providerName}</td>
+            <td class="uid">${b.uid.slice(0, 10)}…</td>
+            <td>${b.service || ''}</td>
+            <td>${b.date || ''} · ${b.time || ''}</td>
+            <td><span class="badge ${b.status}">${b.status}</span></td>
+          </tr>`).join('') || `<tr><td colspan="5" class="empty">No bookings yet.</td></tr>`;
+      } catch (e) {
+        body.innerHTML = `<tr><td colspan="5" class="empty">Couldn't load bookings: ${e.message}</td></tr>`;
+      }
+    }
+  </script>
+</body>
+</html>

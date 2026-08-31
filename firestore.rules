@@ -2,25 +2,46 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Provider catalog — public read (needed for the app's Home/Explore/Detail
-    // screens to load), no client writes. Providers are seeded once via
-    // seed.html; update them from the Firebase Console instead of the client.
-    match /providers/{providerId} {
-      allow read: if true;
+    function isAdmin() {
+      return request.auth != null &&
+        exists(/databases/$(database)/documents/admins/$(request.auth.uid));
+    }
+
+    // Admin allowlist — a user can only check their own membership.
+    // Add/remove admins from the Firebase Console (Firestore → Data), not the app.
+    match /admins/{uid} {
+      allow read: if request.auth != null && request.auth.uid == uid;
       allow write: if false;
     }
 
+    // Provider catalog — public read (needed for the app's Home/Explore/Detail
+    // screens to load). Writes are admin-only (see admin.html).
+    match /providers/{providerId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
     // Per-user data — favorites (a field on the user doc), vehicles, and
-    // bookings. Only the signed-in owner can read or write their own data.
+    // bookings. The owner can read/write their own data; admins can read
+    // (not write) any user's data for support/oversight in admin.html.
     match /users/{userId} {
-      allow read, write: if request.auth != null && request.auth.uid == userId;
+      allow read: if request.auth != null && (request.auth.uid == userId || isAdmin());
+      allow write: if request.auth != null && request.auth.uid == userId;
 
       match /vehicles/{vehicleId} {
-        allow read, write: if request.auth != null && request.auth.uid == userId;
+        allow read: if request.auth != null && (request.auth.uid == userId || isAdmin());
+        allow write: if request.auth != null && request.auth.uid == userId;
       }
       match /bookings/{bookingId} {
-        allow read, write: if request.auth != null && request.auth.uid == userId;
+        allow read: if request.auth != null && (request.auth.uid == userId || isAdmin());
+        allow write: if request.auth != null && request.auth.uid == userId;
       }
+    }
+
+    // Collection-group read access so admin.html can query every user's
+    // bookings at once (a plain nested rule can't authorize that query shape).
+    match /{path=**}/bookings/{bookingId} {
+      allow read: if isAdmin();
     }
 
     // Everything else is denied by default until it's actually needed.

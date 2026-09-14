@@ -426,15 +426,6 @@ const DEFAULT_BOOKINGS = [
     location: 'St. 360, Boeung Keng Kang, Phnom Penh' },
 ];
 
-// ---- Notifications (mock starting state) ----
-const DEFAULT_NOTIFICATIONS = [
-  { id: 'n1', icon: 'check',  titleKey: 'ntf.n1.t', descKey: 'ntf.n1.d', timeKey: 'ntf.time.10m', read: false },
-  { id: 'n2', icon: 'nav',    titleKey: 'ntf.n2.t', descKey: 'ntf.n2.d', timeKey: 'ntf.time.1h',  read: false },
-  { id: 'n3', icon: 'fire',   titleKey: 'ntf.n3.t', descKey: 'ntf.n3.d', timeKey: 'ntf.time.3h',  read: true },
-  { id: 'n4', icon: 'wrench', titleKey: 'ntf.n4.t', descKey: 'ntf.n4.d', timeKey: 'ntf.time.1d',  read: true },
-  { id: 'n5', icon: 'star',   titleKey: 'ntf.n5.t', descKey: 'ntf.n5.d', timeKey: 'ntf.time.2d',  read: true },
-];
-
 // ---- Saved locations (mock starting state) ----
 const DEFAULT_SAVED_LOCATIONS = [
   { id: 'sl1', icon: 'home',  labelKey: 'loc.home',  address: 'St. 271, Toul Tom Poung, Phnom Penh' },

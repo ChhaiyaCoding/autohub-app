@@ -359,6 +359,13 @@
       }
     }
 
+    // Drop a notification into the customer's inbox (users/{uid}/notifications).
+    // The app renders `kind` + params in the customer's own language.
+    function notifyCustomer(uid, data) {
+      return window.fs.addDoc(window.fs.collection(window.db, 'users', uid, 'notifications'),
+        { ...data, read: false, createdAt: Date.now() });
+    }
+
     async function updateBookingProgress(i, stage) {
       const b = currentBookings[i];
       const ref = window.fs.doc(window.db, 'users', b.uid, 'bookings', b.id);
@@ -367,6 +374,9 @@
       try {
         await window.fs.setDoc(ref, patch, { merge: true });
         b.progress = stage;
+        if (stage !== 'accepted') {
+          await notifyCustomer(b.uid, { kind: 'progress', stage, bookingId: b.id, providerName: b.providerName });
+        }
       } catch (e) {
         alert('Failed to update: ' + e.message);
         loadBookings();
@@ -407,6 +417,9 @@
       await window.fs.addDoc(
         window.fs.collection(window.db, 'users', chatBooking.uid, 'bookings', chatBooking.id, 'messages'),
         { from: 'admin', text, createdAt: Date.now() });
+      await notifyCustomer(chatBooking.uid, {
+        kind: 'message', bookingId: chatBooking.id, providerName: chatBooking.providerName, text,
+      });
     }
   </script>
 </body>

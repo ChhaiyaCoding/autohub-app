@@ -229,13 +229,16 @@ const I18N = {
 
     // Notifications
     'ntf.markAllRead': 'Mark all read',
-    'ntf.n1.t': 'Booking Confirmed', 'ntf.n1.d': 'Your Brake Service with AutoHub Partner Garage is confirmed for Jun 25.',
-    'ntf.n2.t': 'Mechanic En Route', 'ntf.n2.d': 'Your mechanic is on the way — arriving in about 5 minutes.',
-    'ntf.n3.t': 'Limited Promotion', 'ntf.n3.d': '20% off Full Detailing this week only.',
-    'ntf.n4.t': 'Service Reminder', 'ntf.n4.d': "It's almost time for your Toyota Highlander's oil change.",
-    'ntf.n5.t': 'Booking Completed', 'ntf.n5.d': 'Your Full Detailing service is done — rate your experience!',
-    'ntf.time.10m': '10 min ago', 'ntf.time.1h': '1 hour ago', 'ntf.time.3h': '3 hours ago',
-    'ntf.time.1d': 'Yesterday', 'ntf.time.2d': '2 days ago',
+    'ntf.emptyTitle': 'No notifications yet', 'ntf.emptyDesc': "You'll see booking updates and messages here.",
+    'ntf.welcome.t': 'Welcome to AutoHub', 'ntf.welcome.d': 'Find trusted garages nearby and book your first service.',
+    'ntf.booked.t': 'Booking Confirmed', 'ntf.booked.d': 'Your {service} with {provider} is set for {date}.',
+    'ntf.progress.enroute.t': 'Mechanic En Route', 'ntf.progress.enroute.d': '{provider} is on the way to you.',
+    'ntf.progress.arrived.t': 'Mechanic Arrived', 'ntf.progress.arrived.d': '{provider} has arrived at your location.',
+    'ntf.progress.inprogress.t': 'Service In Progress', 'ntf.progress.inprogress.d': '{provider} is working on your vehicle.',
+    'ntf.progress.completed.t': 'Service Completed', 'ntf.progress.completed.d': 'Your service with {provider} is done — rate your experience!',
+    'ntf.message.t': 'New message from {provider}',
+    'time.justNow': 'Just now', 'time.minAgo': '{n} min ago', 'time.hoursAgo': '{n} hours ago',
+    'time.yesterday': 'Yesterday', 'time.daysAgo': '{n} days ago',
 
     // Saved locations
     'loc.home': 'Home', 'loc.work': 'Work', 'loc.other': 'Other',
@@ -479,13 +482,16 @@ const I18N = {
 
     // Notifications
     'ntf.markAllRead': 'សម្គាល់ថាបានអានទាំងអស់',
-    'ntf.n1.t': 'បានបញ្ជាក់ការកក់', 'ntf.n1.d': 'សេវាហ្វ្រាំង (Brake Service) របស់អ្នកជាមួយ AutoHub Partner Garage ត្រូវបានបញ្ជាក់សម្រាប់ថ្ងៃទី ២៥ មិថុនា។',
-    'ntf.n2.t': 'ជាងកំពុងធ្វើដំណើរមក', 'ntf.n2.d': 'ជាងជួសជុលរបស់អ្នកកំពុងធ្វើដំណើរមក — នឹងមកដល់ក្នុងរយៈពេលប្រហែល ៥ នាទី។',
-    'ntf.n3.t': 'ប្រូម៉ូសិនកំណត់ពេល', 'ntf.n3.d': 'បញ្ចុះតម្លៃ ២០% សម្រាប់ Full Detailing សប្តាហ៍នេះតែប៉ុណ្ណោះ។',
-    'ntf.n4.t': 'រំលឹកសេវាកម្ម', 'ntf.n4.d': 'ជិតដល់ពេលប្តូរប្រេងម៉ាស៊ីនសម្រាប់ Toyota Highlander របស់អ្នកហើយ។',
-    'ntf.n5.t': 'បានបញ្ចប់ការកក់', 'ntf.n5.d': 'សេវា Full Detailing របស់អ្នករួចរាល់ហើយ — សូមវាយតម្លៃបទពិសោធន៍!',
-    'ntf.time.10m': '១០ នាទីមុន', 'ntf.time.1h': '១ ម៉ោងមុន', 'ntf.time.3h': '៣ ម៉ោងមុន',
-    'ntf.time.1d': 'ម្សិលមិញ', 'ntf.time.2d': '២ ថ្ងៃមុន',
+    'ntf.emptyTitle': 'មិនទាន់មានការជូនដំណឹងទេ', 'ntf.emptyDesc': 'ព័ត៌មានការកក់ និងសារនឹងបង្ហាញនៅទីនេះ។',
+    'ntf.welcome.t': 'សូមស្វាគមន៍មកកាន់ AutoHub', 'ntf.welcome.d': 'ស្វែងរកហ្គារ៉ាសដែលទុកចិត្តបាននៅជិតអ្នក ហើយកក់សេវាដំបូងរបស់អ្នក។',
+    'ntf.booked.t': 'បានបញ្ជាក់ការកក់', 'ntf.booked.d': '{service} របស់អ្នកជាមួយ {provider} ត្រូវបានកំណត់នៅថ្ងៃ {date}។',
+    'ntf.progress.enroute.t': 'ជាងកំពុងធ្វើដំណើរមក', 'ntf.progress.enroute.d': '{provider} កំពុងធ្វើដំណើរមកកាន់អ្នក។',
+    'ntf.progress.arrived.t': 'ជាងបានមកដល់', 'ntf.progress.arrived.d': '{provider} បានមកដល់ទីតាំងរបស់អ្នកហើយ។',
+    'ntf.progress.inprogress.t': 'កំពុងធ្វើសេវា', 'ntf.progress.inprogress.d': '{provider} កំពុងជួសជុលរថយន្តរបស់អ្នក។',
+    'ntf.progress.completed.t': 'សេវារួចរាល់', 'ntf.progress.completed.d': 'សេវារបស់អ្នកជាមួយ {provider} រួចរាល់ហើយ — សូមវាយតម្លៃបទពិសោធន៍!',
+    'ntf.message.t': 'សារថ្មីពី {provider}',
+    'time.justNow': 'អម្បាញ់មិញ', 'time.minAgo': '{n} នាទីមុន', 'time.hoursAgo': '{n} ម៉ោងមុន',
+    'time.yesterday': 'ម្សិលមិញ', 'time.daysAgo': '{n} ថ្ងៃមុន',
 
     // Saved locations
     'loc.home': 'ផ្ទះ', 'loc.work': 'កន្លែងធ្វើការ', 'loc.other': 'ផ្សេងទៀត',

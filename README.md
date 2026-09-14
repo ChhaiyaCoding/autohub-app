@@ -35,6 +35,7 @@ Bottom nav: **Home · Explore · SOS · Favorites · Profile** (SOS is a raised 
 
 ```
 index.html            App shell + font + script order
+manifest.webmanifest  PWA manifest — installable to the home screen (icons in img/icons/)
 css/styles.css        Full design system (tokens, components, screens)
 js/config.js          Local config — Google Maps API key (see Live map below)
 js/firebase-config.js Firebase init (ES module, loaded from CDN) — window.db / window.auth
@@ -89,6 +90,10 @@ Profile → "Push Notifications" lets a signed-in user opt in to real, OS-level 
 2. Paste it into `js/config.js`: `const FCM_VAPID_KEY = 'your-key-here';`
 
 Leave it blank and the action just shows a "not configured" toast — nothing else is affected. Once a user enables it, their device token is saved to `users/{uid}.fcmToken` in Firestore; **sending** a push (e.g. from admin.html) still requires either manually pasting that token into the Firebase Console's Cloud Messaging test-send tool (free, one at a time), or a Cloud Functions trigger on the Blaze plan for full automation — this app ships the free client-side half only.
+
+## Install to home screen (PWA)
+
+The app ships a web manifest and icons, so on a phone it can be installed like a native app: Chrome/Android shows an "Add to Home Screen" prompt (or use the browser menu → *Install app*); on iPhone use Safari → Share → *Add to Home Screen*. It opens full-screen (no browser chrome) with the AutoHub icon and name. There is deliberately no offline-caching service worker yet — with frequent deploys, a cache-first shell would risk serving stale code; add one (with versioned cache busting) when offline support becomes a requirement.
 
 ## Ready for later
 

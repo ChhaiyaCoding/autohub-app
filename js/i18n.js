@@ -72,7 +72,7 @@ const I18N = {
     'd.reviews': 'Reviews', 'd.seeAll': 'See all',
     'd.address': 'Address', 'd.hours': 'Opening Hours', 'd.phone': 'Phone',
     'd.reviewsCount': 'reviews', 'd.kmAway': 'km away', 'd.response': 'response',
-    'd.request': 'Request Service', 'd.allReviews': 'All reviews — Coming Soon',
+    'd.allReviews': 'All reviews — Coming Soon',
     'd.direction': 'Direction', 'd.pricing': 'Pricing',
     'd.bookService': 'Book our service now', 'd.includes': 'Includes',
     'd.highlights': 'Workshop Highlights', 'd.readMore': 'Read more...', 'd.readLess': 'Show less',
@@ -183,7 +183,6 @@ const I18N = {
     'au.err.popupClosed': 'Sign-in was cancelled.',
     'au.err.pwMismatch': "Passwords don't match.",
     'au.err.generic': 'Something went wrong — please try again.',
-    'au.signedIn': 'Signed in successfully', 'au.pwReset': 'Password reset — Coming Soon',
 
     // Search
     'se.title': 'Search', 'se.placeholder': 'Search services, garages, or locations',
@@ -248,14 +247,12 @@ const I18N = {
     'chat.empty': 'No messages yet — say hello!',
 
     // Toasts / coming soon
-    't.soon': 'Coming Soon', 't.searchSoon': 'Search is coming soon',
+    't.soon': 'Coming Soon',
     't.addedFav': 'Added to favorites', 't.removedFav': 'Removed from favorites',
     't.calling': 'Calling', 't.directions': 'Opening directions to',
-    't.noNotif': 'No new notifications', 't.requestSoon': 'Request Service — Coming Soon',
     't.shareSoon': 'Share — Coming Soon', 't.editSoon': 'Edit profile — Coming Soon',
-    't.locSoon': 'Saved locations — Coming Soon', 't.notifSoon': 'Notifications — Coming Soon',
     't.helpSoon': 'Help & Support — Coming Soon', 't.settingsSoon': 'Settings — Coming Soon',
-    't.vehicleSoon': 'Add vehicle — Coming Soon', 't.promoSoon': 'Promotion — Coming Soon',
+    't.promoSoon': 'Promotion — Coming Soon',
     't.langSwitched': 'Language set to English',
   },
 
@@ -325,7 +322,7 @@ const I18N = {
     'd.reviews': 'មតិវាយតម្លៃ', 'd.seeAll': 'មើលទាំងអស់',
     'd.address': 'អាសយដ្ឋាន', 'd.hours': 'ម៉ោងបើក', 'd.phone': 'ទូរស័ព្ទ',
     'd.reviewsCount': 'មតិ', 'd.kmAway': 'គ.ម ឆ្ងាយ', 'd.response': 'ឆ្លើយតប',
-    'd.request': 'ស្នើសុំសេវា', 'd.allReviews': 'មតិទាំងអស់ — នឹងមានឆាប់ៗ',
+    'd.allReviews': 'មតិទាំងអស់ — នឹងមានឆាប់ៗ',
     'd.direction': 'ទិសដៅ', 'd.pricing': 'តម្លៃ',
     'd.bookService': 'កក់សេវារបស់យើងឥឡូវ', 'd.includes': 'រួមមាន',
     'd.highlights': 'ចំណុចពិសេសរបស់ហាង', 'd.readMore': 'អានបន្ថែម...', 'd.readLess': 'បង្រួម',
@@ -436,7 +433,6 @@ const I18N = {
     'au.err.popupClosed': 'ការចូលគណនីត្រូវបានលុបចោល។',
     'au.err.pwMismatch': 'ពាក្យសម្ងាត់មិនត្រូវគ្នាទេ។',
     'au.err.generic': 'មានបញ្ហាកើតឡើង — សូមព្យាយាមម្តងទៀត។',
-    'au.signedIn': 'ចូលគណនីបានជោគជ័យ', 'au.pwReset': 'កំណត់ពាក្យសម្ងាត់ — នឹងមានឆាប់ៗ',
 
     // Search
     'se.title': 'ស្វែងរក', 'se.placeholder': 'ស្វែងរកសេវា ហាង ឬទីតាំង',
@@ -501,14 +497,12 @@ const I18N = {
     'chat.empty': 'មិនទាន់មានសារនៅឡើយទេ — ស្វាគមន៍!',
 
     // Toasts / coming soon
-    't.soon': 'នឹងមានឆាប់ៗ', 't.searchSoon': 'ការស្វែងរកនឹងមានឆាប់ៗ',
+    't.soon': 'នឹងមានឆាប់ៗ',
     't.addedFav': 'បានបន្ថែមទៅចូលចិត្ត', 't.removedFav': 'បានដកចេញពីចូលចិត្ត',
     't.calling': 'កំពុងហៅ', 't.directions': 'កំពុងបើកផ្លូវទៅ',
-    't.noNotif': 'គ្មានការជូនដំណឹងថ្មី', 't.requestSoon': 'ស្នើសុំសេវា — នឹងមានឆាប់ៗ',
     't.shareSoon': 'ចែករំលែក — នឹងមានឆាប់ៗ', 't.editSoon': 'កែគណនី — នឹងមានឆាប់ៗ',
-    't.locSoon': 'ទីតាំងបានរក្សាទុក — នឹងមានឆាប់ៗ', 't.notifSoon': 'ការជូនដំណឹង — នឹងមានឆាប់ៗ',
     't.helpSoon': 'ជំនួយ និងគាំទ្រ — នឹងមានឆាប់ៗ', 't.settingsSoon': 'ការកំណត់ — នឹងមានឆាប់ៗ',
-    't.vehicleSoon': 'បន្ថែមរថយន្ត — នឹងមានឆាប់ៗ', 't.promoSoon': 'ប្រូម៉ូសិន — នឹងមានឆាប់ៗ',
+    't.promoSoon': 'ប្រូម៉ូសិន — នឹងមានឆាប់ៗ',
     't.langSwitched': 'បានប្ដូរទៅភាសាខ្មែរ',
   },
 };

@@ -132,11 +132,12 @@ const App = {
           initials: name.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase(),
         };
         this._loadUserData(user.uid);
-        if (this.AUTH_SCREENS.includes(this.state.route)) this.go('home');
+        if (this.AUTH_SCREENS.includes(this.state.route)) { this.go('home'); this._history = []; }
         else this.render();
       } else {
         this.state.user = null;
         if (!this.AUTH_SCREENS.includes(this.state.route)) this.go('login');
+        this._history = [];
       }
     });
   },
@@ -202,6 +203,7 @@ const App = {
   async logout() {
     try { await window.authFns.signOut(window.auth); } catch (e) {}
     this.go('login');
+    this._history = [];
   },
 
   // Progressive enhancement: render immediately with the local mock catalog,
@@ -306,10 +308,18 @@ const App = {
   },
 
   // ---- navigation ----
-  go(route, param = null) {
+  // Navigation history so back() returns to where the user actually came from
+  // (Category → Detail → back lands on Category, not Home). Cleared on login/logout.
+  _history: [],
+  go(route, param = null, opts = {}) {
     this.closeModal();
     if (this._trackUnsub && route !== 'track') { this._trackUnsub(); this._trackUnsub = null; }
     if (this._chatUnsub && route !== 'chat') { this._chatUnsub(); this._chatUnsub = null; }
+    const cur = this.state.route;
+    if (!opts.back && cur && (cur !== route || this.state.param !== param)) {
+      this._history.push({ route: cur, param: this.state.param });
+      if (this._history.length > 20) this._history.shift();
+    }
     this.state.route = route;
     this.state.param = param;
     if (route === 'category') this.state.filter = 'nearest';
@@ -318,16 +328,9 @@ const App = {
     this.scrollTop();
   },
   back() {
-    // simple contextual back
-    const r = this.state.route;
-    if (r === 'detail') {
-      // go back to a sensible parent
-      this.go('home');
-    } else if (['category','sos','activity'].includes(r)) {
-      this.go('home');
-    } else {
-      this.go('home');
-    }
+    const prev = this._history.pop();
+    if (prev) { this.go(prev.route, prev.param, { back: true }); return; }
+    this.go(this.AUTH_SCREENS.includes(this.state.route) ? 'login' : 'home', null, { back: true });
   },
   scrollTop() { window.scrollTo({ top: 0 }); if (this.root) this.root.scrollTop = 0; },
 
@@ -1077,7 +1080,6 @@ const App = {
   // =========================================================
   Favorites() {
     const favs = this.state.favorites.map(getProvider).filter(Boolean);
-    const garages = favs.filter(p => p.category !== 'Towing');
 
     const body = favs.length
       ? `<div class="pad">${favs.map(ProviderCard).join('')}</div>`
@@ -1749,7 +1751,7 @@ const App = {
         <h2 class="auth-h">${t('au.title')}</h2>
         <p class="auth-sub">${t('au.welcome')}</p>
         <button class="social-btn" onclick="App.signInWithGoogle()">${micon('logos:google-icon', 20)} ${t('au.google')}</button>
-        <button class="social-btn" onclick="App.toast(t('au.google') + ' ' + t('t.soon'))">${micon('logos:facebook', 20)} ${t('au.facebook')}</button>
+        <button class="social-btn" onclick="App.toast(t('au.facebook') + ' ' + t('t.soon'))">${micon('logos:facebook', 20)} ${t('au.facebook')}</button>
         <button class="social-btn" onclick="App.toast(t('au.apple') + ' ' + t('t.soon'))"><span class="apple-ic">${micon('mdi:apple', 22)}</span> ${t('au.apple')}</button>
         <div class="auth-or"><span>${t('au.or')}</span></div>
         <button class="btn btn-orange" onclick="App.go('signin')">${t('au.signIn')}</button>

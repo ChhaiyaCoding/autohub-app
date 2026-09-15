@@ -338,14 +338,6 @@ const PROVIDERS = [
   },
 ];
 
-// ---- Reviews (shared mock) ----
-const REVIEWS = [
-  { name: 'Sokha P.',   rating: 5, date: '2 days ago',  text: 'Super fast response and very professional. Fixed my issue on the spot. Highly recommend!' },
-  { name: 'Dara K.',    rating: 5, date: '1 week ago',  text: 'Honest pricing and skilled mechanics. My car runs like new. Will come back for sure.' },
-  { name: 'Lina S.',    rating: 4, date: '2 weeks ago', text: 'Good service overall, a little busy but worth the wait. Staff were friendly and helpful.' },
-  { name: 'Vibol T.',   rating: 5, date: '3 weeks ago', text: 'Came to my location within 10 minutes during an emergency. Lifesavers!' },
-];
-
 // ---- Activity / History (mock) ----
 const ACTIVITY = {
   recentlyViewed: ['mobile-mechanic', 'pp-towing', 'tire-pro', 'japan-auto'],

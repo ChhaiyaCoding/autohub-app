@@ -23,6 +23,7 @@ const App = {
     location: 'Phnom Penh, Cambodia',
     user: null,   // populated from Firebase Auth once signed in — see _watchAuthState
     notifications: [],   // users/{uid}/notifications — live via onSnapshot, see _initNotifListener
+    reviewsByProvider: {},   // providerId → reviews[] (cached per session, see _loadProviderReviews)
     notificationsEnabled: true,
     savedLocations: [...DEFAULT_SAVED_LOCATIONS],
     pickingSavedLocation: false,
@@ -554,6 +555,7 @@ const App = {
       case 'home':       html = this.Home(); break;
       case 'category':   html = this.Category(); break;
       case 'detail':     html = this.Detail(); showNav = false; break;
+      case 'reviews':    html = this.Reviews(); showNav = false; break;
       case 'sos':        html = this.SOS(); break;
       case 'explore':    html = this.Explore(); break;
       case 'favorites':  html = this.Favorites(); break;
@@ -580,6 +582,7 @@ const App = {
     if (r === 'location') this._initLocationGMap();
     if (r === 'track') this._initTrackListener();
     if (r === 'chat') this._initChatListener();
+    if (r === 'detail' || r === 'reviews') this._loadProviderReviews(this.state.param);
   },
 
   // Make every clickable div/span keyboard-focusable and announced as a button,
@@ -799,11 +802,7 @@ const App = {
       <div class="chips-wrap" style="margin-bottom:18px">
         ${p.services.map(s => `<span class="tag" style="padding:8px 13px">${s}</span>`).join('')}
       </div>
-      <div class="section-head" style="margin:6px 0 12px">
-        <div class="h2">${t('d.reviews')}</div>
-        <div class="link" onclick="App.toast(t('d.allReviews'))">${t('d.seeAll')}</div>
-      </div>
-      ${REVIEWS.slice(0,3).map(r => ReviewCard(r, p.color1)).join('')}
+      ${this._reviewsBlock(p, 3)}
     `;
 
     // --- Direction tab ---
@@ -882,6 +881,129 @@ const App = {
         <button class="btn btn-orange pb-btn" onclick="App.startBooking('${p.id}')">${t('bk.bookNow')} !</button>
       </div>
     </div>`;
+  },
+
+  // =========================================================
+  // Reviews — providers/{id}/reviews/{uid}: one per user, editable.
+  // The provider's rating/reviews aggregate is recomputed from the real
+  // reviews after every write (see _refreshProviderRating).
+  // =========================================================
+  _loadProviderReviews(pid, force = false) {
+    if (!pid || !window.db || !window.fs) return;
+    if (!force && this.state.reviewsByProvider[pid]) return;
+    window.fs.getDocs(window.fs.collection(window.db, 'providers', pid, 'reviews'))
+      .then((snap) => {
+        this.state.reviewsByProvider[pid] = snap.docs.map((d) => ({ id: d.id, ...d.data() }))
+          .sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+        if (['detail', 'reviews'].includes(this.state.route) && this.state.param === pid) this.render();
+      })
+      .catch((e) => console.warn('Failed to load reviews', e));
+  },
+  _myReview(pid) {
+    const uid = this._currentUid();
+    return uid ? (this.state.reviewsByProvider[pid] || []).find((r) => r.id === uid) : null;
+  },
+  _reviewsBlock(p, limit) {
+    const all = this.state.reviewsByProvider[p.id];
+    const mine = this._myReview(p.id);
+    const uid = this._currentUid();
+    const card = (r) => ReviewCard(
+      { name: r.name, rating: r.rating, text: r.text, date: this._timeAgo(r.createdAt) }, p.color1,
+      r.id === uid ? `<div class="link" style="margin-top:8px;font-size:12.5px" onclick="App.openReviewForm('${p.id}')">${t('rv.edit')}</div>` : '');
+    const shown = all ? (limit ? all.slice(0, limit) : all) : [];
+    return `
+      <div class="section-head" style="margin:6px 0 12px">
+        <div class="h2">${t('d.reviews')}${all ? ` <span class="faint" style="font-weight:500">(${all.length})</span>` : ''}</div>
+        ${limit && all && all.length > limit ? `<div class="link" onclick="App.go('reviews','${p.id}')">${t('d.seeAll')}</div>` : ''}
+      </div>
+      <button class="btn btn-outline" style="margin-bottom:14px" onclick="App.openReviewForm('${p.id}')">${icon('star')} ${mine ? t('rv.editTitle') : t('rv.write')}</button>
+      ${!all ? '' : shown.length ? shown.map(card).join('')
+        : `<div class="empty" style="padding:22px 0"><h3 style="margin:0 0 4px">${t('rv.none')}</h3><p style="margin:0">${t('rv.noneDesc')}</p></div>`}
+    `;
+  },
+  Reviews() {
+    const p = getProvider(this.state.param);
+    if (!p) return this.Home();
+    return `<div class="screen no-nav">
+      ${TopBar(p.name)}
+      <div class="pad" style="padding-top:8px">${this._reviewsBlock(p, 0)}</div>
+    </div>`;
+  },
+  openReviewForm(pid) {
+    const p = getProvider(pid);
+    if (!p || !this._currentUid()) { this.toast(t('rv.needLogin')); return; }
+    const mine = this._myReview(pid);
+    this._reviewDraft = { pid, rating: mine ? mine.rating : 0 };
+    const dialog = `<div class="dialog-card">
+      <div class="dlg-t">${mine ? t('rv.editTitle') : t('rv.write')}</div>
+      <div class="dlg-d">${esc(p.name)}</div>
+      <div class="star-row" id="rv-stars">
+        ${[1, 2, 3, 4, 5].map((n) => `<span class="st ${n <= this._reviewDraft.rating ? 'on' : ''}" onclick="App.setReviewStars(${n})">${icon('star')}</span>`).join('')}
+      </div>
+      <div class="field" style="margin-bottom:14px"><textarea id="rv-text" class="ta" rows="3" placeholder="${t('rv.textPh')}">${esc(mine ? mine.text : '')}</textarea></div>
+      <button class="btn btn-orange" onclick="App.submitReview('${pid}')">${t('rv.submit')}</button>
+      ${mine ? `<button class="btn btn-white" style="color:var(--danger)" onclick="App.deleteReview('${pid}')">${t('rv.delete')}</button>` : ''}
+      <button class="btn btn-white" onclick="App.closeModal()">${t('em.cancel')}</button>
+    </div>`;
+    this._renderModal(dialog, 'center');
+  },
+  setReviewStars(n) {
+    if (!this._reviewDraft) return;
+    this._reviewDraft.rating = n;
+    document.querySelectorAll('#rv-stars .st').forEach((el, i) => el.classList.toggle('on', i < n));
+  },
+  async submitReview(pid) {
+    const uid = this._currentUid();
+    const d = this._reviewDraft;
+    if (!uid || !d || d.pid !== pid) return;
+    if (!d.rating) { this.toast(t('rv.needRating')); return; }
+    const text = ((document.getElementById('rv-text') || {}).value || '').trim().slice(0, 1000);
+    const existing = this._myReview(pid);
+    const review = {
+      uid, name: (this.state.user && this.state.user.name) || 'User', rating: d.rating, text,
+      createdAt: existing ? existing.createdAt : Date.now(), updatedAt: Date.now(),
+    };
+    try {
+      await window.fs.setDoc(window.fs.doc(window.db, 'providers', pid, 'reviews', uid), review);
+      this.closeModal();
+      this.toast(t('rv.saved'));
+      await this._refreshProviderRating(pid);
+    } catch (e) {
+      console.warn('Failed to save review', e);
+      this.toast(t('au.err.generic'));
+    }
+  },
+  async deleteReview(pid) {
+    const uid = this._currentUid();
+    if (!uid) return;
+    try {
+      await window.fs.deleteDoc(window.fs.doc(window.db, 'providers', pid, 'reviews', uid));
+      this.closeModal();
+      this.toast(t('rv.deleted'));
+      await this._refreshProviderRating(pid);
+    } catch (e) {
+      console.warn('Failed to delete review', e);
+      this.toast(t('au.err.generic'));
+    }
+  },
+  // Recompute the aggregate from the real reviews and store it on the provider
+  // so list cards (Home/Explore/Category) show live numbers too. Rules only let
+  // signed-in users touch these two fields. Without Cloud Functions this is
+  // client-computed — good enough for a prototype, not tamper-proof.
+  async _refreshProviderRating(pid) {
+    const snap = await window.fs.getDocs(window.fs.collection(window.db, 'providers', pid, 'reviews'));
+    const list = snap.docs.map((d) => ({ id: d.id, ...d.data() })).sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+    this.state.reviewsByProvider[pid] = list;
+    const count = list.length;
+    const rating = count ? Math.round((list.reduce((s, r) => s + (r.rating || 0), 0) / count) * 10) / 10 : 0;
+    const p = getProvider(pid);
+    if (p) { p.rating = rating; p.reviews = count; }
+    this.render();
+    try {
+      await window.fs.setDoc(window.fs.doc(window.db, 'providers', pid), { rating, reviews: count }, { merge: true });
+    } catch (e) {
+      console.warn('Failed to update provider rating', e);
+    }
   },
 
   // =========================================================
@@ -1669,7 +1791,7 @@ const App = {
     const wrap = document.getElementById('chat-messages');
     if (!wrap) return;
     wrap.innerHTML = msgs.length ? msgs.map((m) => `<div class="chat-row ${m.from === 'user' ? 'mine' : ''}">
-      <div class="chat-bubble">${m.text}<span class="chat-time">${this._fmtChatTime(m.createdAt)}</span></div>
+      <div class="chat-bubble">${esc(m.text)}<span class="chat-time">${this._fmtChatTime(m.createdAt)}</span></div>
     </div>`).join('') : `<div class="chat-empty">${t('chat.empty')}</div>`;
     wrap.scrollTop = wrap.scrollHeight;
   },

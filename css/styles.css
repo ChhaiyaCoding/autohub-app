@@ -1298,6 +1298,15 @@ body {
 .dot-unread { display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: var(--orange); margin-right: 5px; vertical-align: middle; }
 
 /* ===========================================================
+   Reviews — star picker in the write-review dialog
+   =========================================================== */
+.star-row { display: flex; justify-content: center; gap: 8px; margin: 14px 0 18px; }
+.star-row .st { cursor: pointer; padding: 4px; }
+.star-row .st svg { width: 34px; height: 34px; color: var(--surface-3); transition: transform .12s var(--ease), color .12s; }
+.star-row .st.on svg { color: var(--gold); }
+.star-row .st:active svg { transform: scale(1.15); }
+
+/* ===========================================================
    Chat (mock — Track Service)
    =========================================================== */
 .chat-screen { display: flex; flex-direction: column; height: 100vh; padding-bottom: 0; }

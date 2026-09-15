@@ -254,19 +254,28 @@ function ExplorePill(item) {
   </div>`;
 }
 
-// ---- ReviewCard ----
-function ReviewCard(r, color) {
-  const initials = r.name.split(' ').map(w => w[0]).join('').slice(0,2);
+// ---- Escape user-generated text before interpolating it into HTML ----
+function esc(s) {
+  return String(s == null ? '' : s)
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+}
+
+// ---- ReviewCard ---- (r.name / r.text are user-generated → escaped)
+function ReviewCard(r, color, actions = '') {
+  const name = r.name || 'User';
+  const initials = name.split(' ').map(w => w[0]).join('').slice(0,2).toUpperCase();
   return `<div class="review-card card">
     <div class="rhead">
-      <div class="rav" style="background:linear-gradient(135deg,${color},#b8430a)">${initials}</div>
+      <div class="rav" style="background:linear-gradient(135deg,${color},#b8430a)">${esc(initials)}</div>
       <div>
-        <div class="rname">${r.name}</div>
+        <div class="rname">${esc(name)}</div>
         <div class="rdate">${r.date}</div>
       </div>
       <div style="margin-left:auto">${ratingEl(r.rating)}</div>
     </div>
-    <div class="rtext">${r.text}</div>
+    ${r.text ? `<div class="rtext">${esc(r.text)}</div>` : ''}
+    ${actions}
   </div>`;
 }
 

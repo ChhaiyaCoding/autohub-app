@@ -179,6 +179,13 @@
     let currentProviders = [];
     let editingId = null;
 
+    // Escape customer-typed text (chat) before interpolating it into HTML.
+    function esc(s) {
+      return String(s == null ? '' : s)
+        .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+    }
+
     function show(id) {
       ['login-view','denied-view','dash-view'].forEach(v => document.getElementById(v).classList.toggle('hidden', v !== id));
     }
@@ -399,7 +406,7 @@
         const msgs = snap.docs.map(d => d.data());
         wrap.innerHTML = msgs.map(m => `
           <div style="align-self:${m.from === 'admin' ? 'flex-end' : 'flex-start'};max-width:78%;background:${m.from === 'admin' ? 'var(--orange)' : '#fff'};color:${m.from === 'admin' ? '#fff' : 'var(--text)'};padding:8px 12px;border-radius:12px;font-size:13.5px">
-            ${m.text}
+            ${esc(m.text)}
           </div>`).join('') || '<div class="muted" style="text-align:center;padding:20px">No messages yet.</div>';
         wrap.scrollTop = wrap.scrollHeight;
       });
